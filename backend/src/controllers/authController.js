@@ -1,9 +1,8 @@
 import userModel from "../models/userModel.js";
 import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { controller, ok } from "../utils/controller.js";
 
-export const register = asyncHandler(async (req, res) => {
+export const register = controller(async (req, res) => {
   const { username, email, role, password } = req.body;
   if ([email, username, password].some((field) => field?.trim() === "")) {
     throw new ApiError(400, "All fields are required");
@@ -23,18 +22,13 @@ export const register = asyncHandler(async (req, res) => {
   const token = user.generateToken();
   const createdUser = await userModel.findById(user._id).select("-password");
   res.cookie("token", token);
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { user: createdUser, token },
-        "User Register Successfully",
-      ),
-    );
+  return ok(
+    { user: createdUser, token },
+    "User Register Successfully",
+  );
 });
 
-export const login = asyncHandler(async (req, res) => {
+export const login = controller(async (req, res) => {
   const { email, password } = req.body;
   if ([email, password].some((field) => field?.trim() === "")) {
     throw new ApiError(400, "All fields are required");
@@ -53,32 +47,23 @@ export const login = asyncHandler(async (req, res) => {
     .findById(findUser._id)
     .select("-password");
 
-  return res
-    .status(200)
-    .cookie("token", token)
-    .json(
-      new ApiResponse(
-        200,
-        { user: loggedInUser, token },
-        "User LoggedIn Successfully",
-      ),
-    );
+  res.cookie("token", token);
+  return ok(
+    { user: loggedInUser, token },
+    "User LoggedIn Successfully",
+  );
 });
 
-export const logout = asyncHandler(async (req, res) => {
+export const logout = controller(async (req, res) => {
   res.clearCookie("token");
-  return res
-    .status(200)
-    .json(new ApiResponse(200, "User Logged Out Succesfully"));
+  return ok("User Logged Out Succesfully");
 });
 
-export const getMe = asyncHandler(async (req, res) => {
+export const getMe = controller(async (req, res) => {
   const userId = req.user._id;
   if (!userId) {
     throw new ApiError(400, "userId not found");
   }
   const user = await userModel.findById(userId).select("-password");
-  return res
-    .status(200)
-    .json(new ApiResponse(200, user, "User fetch Successfully"));
+  return ok(user, "User fetch Successfully");
 });

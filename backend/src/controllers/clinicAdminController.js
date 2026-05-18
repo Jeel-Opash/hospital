@@ -1,11 +1,10 @@
 import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { controller, ok } from "../utils/controller.js";
 import appointmentModel from "../models/appointmentModel.js";
 import { DateTime } from "luxon";
 import { IST } from "../utils/dateUtils.js";
 
-export const appointmentPerDoctors = asyncHandler(async (req, res) => {
+export const appointmentPerDoctors = controller(async (req, res) => {
   if (req.user?.role !== "Clinic Admin") {
     throw new ApiError(403, "Access restricted to Clinic Admins only");
   }
@@ -15,11 +14,7 @@ export const appointmentPerDoctors = asyncHandler(async (req, res) => {
   const matchStage = {};
 
   const VALID_STATUSES = [
-    "PENDING",
-    "CONFIRMED",
-    "CANCELLED",
-    "NO_SHOW",
-    "COMPLETED",
+    "PENDING","CONFIRMED","CANCELLED","NO_SHOW","COMPLETED",
   ];
   if (status) {
     const upperStatus = status.toUpperCase();
@@ -145,19 +140,17 @@ export const appointmentPerDoctors = asyncHandler(async (req, res) => {
       completed: 0,
     }
   );
-  return res.status(200).json(
-    new ApiResponse(
-        200,{
-            filters:{
+  return ok(
+    {
+      filters: {
         status: status?.toUpperCase() ?? "ALL",
-          from: from ?? null,
-          to: to ?? null,
-        },
-        clinicSummary: summary,
-        doctorCount: results.length,
-        doctors: results,
+        from: from ?? null,
+        to: to ?? null,
       },
-      "Fetched appointments per doctor",
-    ),
+      clinicSummary: summary,
+      doctorCount: results.length,
+      doctors: results,
+    },
+    "Fetched appointments per doctor",
   );
 });

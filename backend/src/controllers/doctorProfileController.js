@@ -1,12 +1,11 @@
 import doctorProfileModel from "../models/doctorProfileModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { controller, created, fail, ok } from "../utils/controller.js";
 import { DateTime } from "luxon";
 import { IST } from "../utils/dateUtils.js";
 
-export const createDoctorProfile = asyncHandler(async (req, res) => {
+export const createDoctorProfile = controller(async (req, res) => {
   const {
     specialty,
     qualifications,
@@ -46,18 +45,10 @@ export const createDoctorProfile = asyncHandler(async (req, res) => {
     timezone: timezone || IST,
   });
 
-  return res
-    .status(201)
-    .json(
-      new ApiResponse(
-        201,
-        doctorProfile,
-        "Doctor profile created successfully",
-      ),
-    );
+  return created(doctorProfile, "Doctor profile created successfully");
 });
 
-export const updateDoctorProfile = asyncHandler(async (req, res) => {
+export const updateDoctorProfile = controller(async (req, res) => {
   const {
     specialty,
     qualifications,
@@ -92,18 +83,10 @@ export const updateDoctorProfile = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Doctor profile not found");
   }
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        doctorProfile,
-        "Doctor profile updated successfully",
-      ),
-    );
+  return ok(doctorProfile, "Doctor profile updated successfully");
 });
 
-export const defineWeeklyAvailability = asyncHandler(async (req, res) => {
+export const defineWeeklyAvailability = controller(async (req, res) => {
   const { weeklyAvailability } = req.body;
 
   if (!weeklyAvailability) {
@@ -122,18 +105,13 @@ export const defineWeeklyAvailability = asyncHandler(async (req, res) => {
 
   const updatedProfile = await doctorProfile.save();
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        updatedProfile,
-        "Weekly availability updated successfully",
-      ),
-    );
+  return ok(
+    updatedProfile,
+    "Weekly availability updated successfully",
+  );
 });
 
-export const updateBlackoutDates = asyncHandler(async (req, res) => {
+export const updateBlackoutDates = controller(async (req, res) => {
   const { blackoutDates } = req.body;
 
   if (!blackoutDates || !Array.isArray(blackoutDates)) {
@@ -153,39 +131,22 @@ export const updateBlackoutDates = asyncHandler(async (req, res) => {
 
   const updatedProfile = await doctorProfile.save();
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        updatedProfile,
-        "Blackout dates updated successfully",
-      ),
-    );
+  return ok(updatedProfile, "Blackout dates updated successfully");
 });
 
-export const getMyProfile = asyncHandler(async (req, res) => {
+export const getMyProfile = controller(async (req, res) => {
   const doctorProfile = await doctorProfileModel.findOne({
     userId: req.user?._id,
   });
 
   if (!doctorProfile) {
-    return res
-      .status(404)
-      .json(
-        new ApiResponse(
-          404,
-          null,
-          "Doctor Profile Not Found, Please create a Doctor Profile",
-        ),
-      );
+    return fail(
+      "Doctor Profile Not Found, Please create a Doctor Profile",
+      404,
+    );
   }
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, doctorProfile, "Doctor Profile Fetch successfully"),
-    );
+  return ok(doctorProfile, "Doctor Profile Fetch successfully");
 });
 
 const getNextOpenSlots = async (doctor, startDate, n = 5) => {
@@ -263,7 +224,7 @@ const getNextOpenSlots = async (doctor, startDate, n = 5) => {
   return slots;
 };
 
-export const searchDoctor = asyncHandler(async (req, res) => {
+export const searchDoctor = controller(async (req, res) => {
   const { specialty, location, date, n = 5 } = req.query;
 
   const query = { isAcceptingAppointments: true };
@@ -302,9 +263,5 @@ export const searchDoctor = asyncHandler(async (req, res) => {
     );
   }
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, filteredResults, "Doctors fetched successfully"),
-    );
+  return ok(filteredResults, "Doctors fetched successfully");
 });

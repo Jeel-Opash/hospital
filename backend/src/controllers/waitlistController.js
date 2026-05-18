@@ -1,9 +1,8 @@
 import waitlistModel from "../models/waitlistModel.js";
 import appointmentModel from "../models/appointmentModel.js";
 import doctorProfileModel from "../models/doctorProfileModel.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { controller, created, ok } from "../utils/controller.js";
 import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
 import { DateTime } from "luxon";
 import { IST } from "../utils/dateUtils.js";
 
@@ -66,7 +65,7 @@ function shapeEntry(entry, timezone = IST) {
   };
 }
 
-export const joinWaitlist = asyncHandler(async (req, res) => {
+export const joinWaitlist = controller(async (req, res) => {
   const {
     doctorId,
     slotStartUTC: rawStart,
@@ -203,18 +202,13 @@ export const joinWaitlist = asyncHandler(async (req, res) => {
     { path: "patientId", select: "username email" },
   ]);
 
-  return res
-    .status(201)
-    .json(
-      new ApiResponse(
-        201,
-        shapeEntry(entry, timezone),
-        `Added to waitlist at position #${position}`,
-      ),
-    );
+  return created(
+    shapeEntry(entry, timezone),
+    `Added to waitlist at position #${position}`,
+  );
 });
 
-export const getMyWaitlist = asyncHandler(async (req, res) => {
+export const getMyWaitlist = controller(async (req, res) => {
   const patientId = req.user?._id;
   const { timezone = IST } = req.query;
 
@@ -239,12 +233,10 @@ export const getMyWaitlist = asyncHandler(async (req, res) => {
 
   const shaped = waitlists.map((entry) => shapeEntry(entry, timezone));
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, shaped, "Waitlist fetched successfully"));
+  return ok(shaped, "Waitlist fetched successfully");
 });
 
-export const leaveWaitlist = asyncHandler(async (req, res) => {
+export const leaveWaitlist = controller(async (req, res) => {
   const { waitlistId } = req.params;
   const patientId = req.user?._id;
 
@@ -283,12 +275,10 @@ export const leaveWaitlist = asyncHandler(async (req, res) => {
   waitlistEntry.status = "SKIPPED";
   await waitlistEntry.save();
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, null, "Successfully left the waitlist"));
+  return ok(null, "Successfully left the waitlist");
 });
 
-export const getSlotQueue = asyncHandler(async (req, res) => {
+export const getSlotQueue = controller(async (req, res) => {
   const userId = req.user?._id;
   const { doctorId, slotStartUTC: rawStart, timezone = IST } = req.query;
 
@@ -333,12 +323,10 @@ export const getSlotQueue = asyncHandler(async (req, res) => {
 
   const shaped = queue.map((entry) => shapeEntry(entry, timezone));
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, shaped, "Fetched slot queue successfully"));
+  return ok(shaped, "Fetched slot queue successfully");
 });
 
-export const processNextInQueue = asyncHandler(async (req, res) => {
+export const processNextInQueue = controller(async (req, res) => {
   const { doctorId, slotStartUTC: rawStart } = req.body;
 
   if (!doctorId || !rawStart) {
@@ -363,15 +351,10 @@ export const processNextInQueue = asyncHandler(async (req, res) => {
   for (const entry of queue) {
     if (entry.status === "NOTIFIED") {
       if (entry.isActive()) {
-        return res
-          .status(200)
-          .json(
-            new ApiResponse(
-              200,
-              null,
-              `Candidate at position ${entry.position} is currently in their notification window.`,
-            ),
-          );
+        return ok(
+          null,
+          `Candidate at position ${entry.position} is currently in their notification window.`,
+        );
       } else {
         entry.status = "EXPIRED";
         await entry.save();
@@ -397,24 +380,14 @@ export const processNextInQueue = asyncHandler(async (req, res) => {
   }
 
   if (bookedCandidate) {
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(
-          200,
-          shapeEntry(bookedCandidate),
-          "Successfully auto-booked the next candidate",
-        ),
-      );
+    return ok(
+      shapeEntry(bookedCandidate),
+      "Successfully auto-booked the next candidate",
+    );
   }
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        null,
-        "No active candidates found in the queue to process",
-      ),
-    );
+  return ok(
+    null,
+    "No active candidates found in the queue to process",
+  );
 });

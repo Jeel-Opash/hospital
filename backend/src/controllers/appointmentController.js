@@ -1,15 +1,52 @@
 import appointmentModel from "../models/appointmentModel.js";
 import doctorProfileModel from "../models/doctorProfileModel.js";
 import userModel from "../models/userModel.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import { controller, created, ok } from "../utils/controller.js";
 import { ApiError } from "../utils/ApiError.js";
-import { ApiResponse } from "../utils/ApiResponse.js";
 import { DateTime } from "luxon";
 import { IST } from "../utils/dateUtils.js";
 
 const DAY_MAP = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export const bookAppoinment = asyncHandler(async (req, res) => {
+const shapeAppointment = (appt) => ({
+  _id: appt._id,
+  bookingId: appt.bookingId,
+  status: appt.status,
+
+  slot: {
+    startUTC: appt.slotStartUTC,
+    endUTC: appt.slotEndUTC,
+  },
+
+  doctor: appt.doctorId
+    ? {
+      id: appt.doctorId._id,
+      name: appt.doctorId.userId?.username ?? null,
+      email: appt.doctorId.userId?.email ?? null,
+      specialty: appt.doctorId.specialty,
+      consultationFee: appt.doctorId.consultationFee,
+      location: appt.doctorId.location,
+      slotDurationMin: appt.doctorId.slotDurationMin,
+    }
+    : null,
+
+  patient: appt.patientId
+    ? {
+      id: appt.patientId._id,
+      username: appt.patientId.username,
+      email: appt.patientId.email,
+    }
+    : null,
+
+  reason: appt.reason,
+  notes: appt.notes ?? null,
+  bookedAt: appt.createdAt,
+  cancelledAt: appt.cancelledAt ?? null,
+  cancellationReason: appt.cancellationReason ?? null,
+  doctorNotes: appt.doctorNotes ?? "",
+});
+
+export const bookAppoinment = controller(async (req, res) => {
   const { doctorId, slotStartUTC: rawStart, slotEndUTC: rawEnd,
     reason, notes, timezone = IST, } = req.body;
 
@@ -18,6 +55,7 @@ export const bookAppoinment = asyncHandler(async (req, res) => {
       "doctorId, slotStartUTC, slotEndUTC, and reason are required",
     );
   }
+  
   const slotStart = DateTime.fromISO(rawStart, { zone: "utc" });
   const slotEnd = DateTime.fromISO(rawEnd, { zone: "utc" });
   if (!slotStart.isValid || !slotEnd.isValid) {
@@ -109,45 +147,44 @@ export const bookAppoinment = asyncHandler(async (req, res) => {
   } catch {
     localTime = appointment.toLocalTime(IST);
   }
-  return res.status(201).json(
-    new ApiResponse(
-      201,
-      {
-        bookingId: appointment.bookingId,
-        status: appointment.status,
+  return created(
+    {
+      bookingId: appointment.bookingId,
+      status: appointment.status,
 
-        slot: {
-          startUTC: slotStart.toISO(),
-          endUTC: slotEnd.toISO(),
-          durationMin: requestedDurationMin,
-          localStart: localTime.displayStart,
-          localEnd: localTime.displayEnd,
-          timezone,
-        },
-
-        patient: {
-          id: patient._id,
-          username: patient.username,
-          email: patient.email,
-        },
-
-        doctor: {
-          id: doctor._id,
-          specialty: doctor.specialty,
-          consultationFee: doctor.consultationFee,
-          location: doctor.location,
-        },
-
-        reason: appointment.reason,
-        ...(appointment.notes ? { notes: appointment.notes } : {}),
-        bookedAt: appointment.createdAt,
+      slot: {
+        startUTC: slotStart.toISO(),
+        endUTC: slotEnd.toISO(),
+        durationMin: requestedDurationMin,
+        localStart: localTime.displayStart,
+        localEnd: localTime.displayEnd,
+        timezone,
       },
-      "Appointment booked successfully",
-    ),
+
+      patient: {
+        id: patient._id,
+        username: patient.username,
+        email: patient.email,
+      },
+
+      doctor: {
+        id: doctor._id,
+        specialty: doctor.specialty,
+        consultationFee: doctor.consultationFee,
+        location: doctor.location,
+      },
+
+      reason: appointment.reason,
+      ...(appointment.notes ? { notes: appointment.notes } : {}),
+      bookedAt: appointment.createdAt,
+    },
+    "Appointment booked successfully",
   );
 });
 
-export const getAppointmentByPatient = asyncHandler(async (req, res) => {
+
+
+export const getAppointmentByPatient = controller(async (req, res) => {
   const patientId = req.user?._id;
 
   if (!patientId) {
@@ -173,50 +210,12 @@ export const getAppointmentByPatient = asyncHandler(async (req, res) => {
     })
     .lean();
 
-  const shaped = appointments.map((appt) => ({
-    _id: appt._id,
-    bookingId: appt.bookingId,
-    status: appt.status,
+  const shaped = appointments.map(shapeAppointment);
 
-    slot: {
-      startUTC: appt.slotStartUTC,
-      endUTC: appt.slotEndUTC,
-    },
-
-    doctor: appt.doctorId
-      ? {
-        id: appt.doctorId._id,
-        name: appt.doctorId.userId?.username ?? null,
-        email: appt.doctorId.userId?.email ?? null,
-        specialty: appt.doctorId.specialty,
-        consultationFee: appt.doctorId.consultationFee,
-        location: appt.doctorId.location,
-        slotDurationMin: appt.doctorId.slotDurationMin,
-      }
-      : null,
-
-    patient: appt.patientId
-      ? {
-        id: appt.patientId._id,
-        username: appt.patientId.username,
-        email: appt.patientId.email,
-      }
-      : null,
-
-    reason: appt.reason,
-    notes: appt.notes ?? null,
-    bookedAt: appt.createdAt,
-    cancelledAt: appt.cancelledAt ?? null,
-    cancellationReason: appt.cancellationReason ?? null,
-    doctorNotes: appt.doctorNotes ?? "",
-  }));
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, shaped, "Fetched patient appointments"));
+  return ok(shaped, "Fetched patient appointments");
 });
 
-export const getAppointmentByDoctor = asyncHandler(async (req, res) => {
+export const getAppointmentByDoctor = controller(async (req, res) => {
   const userId = req.user?._id;
   const { date } = req.query;
 
@@ -264,50 +263,12 @@ export const getAppointmentByDoctor = asyncHandler(async (req, res) => {
     })
     .lean();
 
-  const shaped = appointments.map((appt) => ({
-    _id: appt._id,
-    bookingId: appt.bookingId,
-    status: appt.status,
+  const shaped = appointments.map(shapeAppointment);
 
-    slot: {
-      startUTC: appt.slotStartUTC,
-      endUTC: appt.slotEndUTC,
-    },
-
-    doctor: appt.doctorId
-      ? {
-        id: appt.doctorId._id,
-        name: appt.doctorId.userId?.username ?? null,
-        email: appt.doctorId.userId?.email ?? null,
-        specialty: appt.doctorId.specialty,
-        consultationFee: appt.doctorId.consultationFee,
-        location: appt.doctorId.location,
-        slotDurationMin: appt.doctorId.slotDurationMin,
-      }
-      : null,
-
-    patient: appt.patientId
-      ? {
-        id: appt.patientId._id,
-        username: appt.patientId.username,
-        email: appt.patientId.email,
-      }
-      : null,
-
-    reason: appt.reason,
-    notes: appt.notes ?? null,
-    bookedAt: appt.createdAt,
-    cancelledAt: appt.cancelledAt ?? null,
-    cancellationReason: appt.cancellationReason ?? null,
-    doctorNotes: appt.doctorNotes ?? "",
-  }));
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, shaped, "Fetched doctor appointments"));
+  return ok(shaped, "Fetched doctor appointments");
 });
 
-export const cancelAppointment = asyncHandler(async (req, res) => {
+export const cancelAppointment = controller(async (req, res) => {
   const { id } = req.params;
   const { reason } = req.body;
   const userId = req.user?._id;
@@ -343,19 +304,14 @@ export const cancelAppointment = asyncHandler(async (req, res) => {
   appointment.cancellationReason = reason || "Cancelled by user";
   await appointment.save();
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { bookingId: appointment.bookingId, status: appointment.status },
-        "Appointment cancelled successfully",
-      ),
-    );
+  return ok(
+    { bookingId: appointment.bookingId, status: appointment.status },
+    "Appointment cancelled successfully",
+  );
 });
 
 
-export const rescheduleAppointment = asyncHandler(async (req, res) => {
+export const rescheduleAppointment = controller(async (req, res) => {
   const { id } = req.params;
   const { newSlotStartUTC: rawStart, newSlotEndUTC: rawEnd, timezone = IST, } = req.body;
   const userId = req.user?._id;
@@ -485,24 +441,21 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
       localTime = newAppointment.toLocalTime(IST);
     }
 
-    return res.status(201).json(
-      new ApiResponse(
-        201,
-        {
-          bookingId: newAppointment.bookingId,
-          status: newAppointment.status,
-          slot: {
-            startUTC: slotStart.toISO(),
-            endUTC: slotEnd.toISO(),
-            durationMin: requestedDurationMin,
-            localStart: localTime.displayStart,
-            localEnd: localTime.displayEnd,
-            timezone,
-          },
-          rescheduledFrom: oldAppointment.bookingId,
+    return created(
+      {
+        bookingId: newAppointment.bookingId,
+        status: newAppointment.status,
+        slot: {
+          startUTC: slotStart.toISO(),
+          endUTC: slotEnd.toISO(),
+          durationMin: requestedDurationMin,
+          localStart: localTime.displayStart,
+          localEnd: localTime.displayEnd,
+          timezone,
         },
-        "Appointment rescheduled successfully",
-      ),
+        rescheduledFrom: oldAppointment.bookingId,
+      },
+      "Appointment rescheduled successfully",
     );
   } catch (error) {
     if (error.code === 11000) {
@@ -512,7 +465,7 @@ export const rescheduleAppointment = asyncHandler(async (req, res) => {
   }
 })
 
-export const doctorUpdateAppointmentStatus = asyncHandler(async (req, res) => {
+export const doctorUpdateAppointmentStatus = controller(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   const userId = req.user?._id;
@@ -563,18 +516,13 @@ export const doctorUpdateAppointmentStatus = asyncHandler(async (req, res) => {
   appointment.status = status;
   await appointment.save();
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { bookingId: appointment.bookingId, status: appointment.status },
-        "Appointment status updated successfully",
-      ),
-    );
+  return ok(
+    { bookingId: appointment.bookingId, status: appointment.status },
+    "Appointment status updated successfully",
+  );
 });
 
-export const AllAppointmentsOfDoctor = asyncHandler(async (req, res) => {
+export const AllAppointmentsOfDoctor = controller(async (req, res) => {
   const userId = req.user?._id;
 
   if (!userId) {
@@ -622,56 +570,15 @@ export const AllAppointmentsOfDoctor = asyncHandler(async (req, res) => {
     })
     .lean();
 
-  const shaped = appointments.map((appt) => ({
-    _id: appt._id,
-    bookingId: appt.bookingId,
-    status: appt.status,
+  const shaped = appointments.map(shapeAppointment);
 
-    slot: {
-      startUTC: appt.slotStartUTC,
-      endUTC: appt.slotEndUTC,
-    },
-
-    doctor: appt.doctorId
-      ? {
-        id: appt.doctorId._id,
-        name: appt.doctorId.userId?.username ?? null,
-        email: appt.doctorId.userId?.email ?? null,
-        specialty: appt.doctorId.specialty,
-        consultationFee: appt.doctorId.consultationFee,
-        location: appt.doctorId.location,
-        slotDurationMin: appt.doctorId.slotDurationMin,
-      }
-      : null,
-
-    patient: appt.patientId
-      ? {
-        id: appt.patientId._id,
-        username: appt.patientId.username,
-        email: appt.patientId.email,
-      }
-      : null,
-
-    reason: appt.reason,
-    notes: appt.notes ?? null,
-    bookedAt: appt.createdAt,
-    cancelledAt: appt.cancelledAt ?? null,
-    cancellationReason: appt.cancellationReason ?? null,
-    doctorNotes: appt.doctorNotes ?? "",
-  }));
-
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { total: shaped.length, appointments: shaped },
-        "Fetched all doctor appointments",
-      ),
-    );
+  return ok(
+    { total: shaped.length, appointments: shaped },
+    "Fetched all doctor appointments",
+  );
 });
 
-export const updateDoctorNotes = asyncHandler(async (req, res) => {
+export const updateDoctorNotes = controller(async (req, res) => {
   const { id } = req.params;
   const { doctorNotes } = req.body;
   const userId = req.user?._id;
@@ -679,11 +586,9 @@ export const updateDoctorNotes = asyncHandler(async (req, res) => {
   if (!userId) {
     throw new ApiError(401, "Authentication required");
   }
-
   if (req.user.role !== "Doctor") {
     throw new ApiError(403, "Only doctors can update doctor notes");
   }
-
   const doctorProfile = await doctorProfileModel.findOne({ userId }).lean();
   if (!doctorProfile) {
     throw new ApiError(404, "Doctor profile not found");
@@ -703,14 +608,8 @@ export const updateDoctorNotes = asyncHandler(async (req, res) => {
 
   appointment.doctorNotes = doctorNotes || "";
   await appointment.save();
-
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(
-        200,
-        { bookingId: appointment.bookingId, doctorNotes: appointment.doctorNotes },
-        "Doctor notes updated successfully",
-      ),
-    );
+  return ok(
+    { bookingId: appointment.bookingId, doctorNotes: appointment.doctorNotes },
+    "Doctor notes updated successfully",
+  );
 });

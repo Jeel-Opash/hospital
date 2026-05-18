@@ -20,7 +20,5 @@ export const formatDateTimeIST = (value) =>
 
 export const formatSlotRangeIST = (start, end) =>
   `${formatTimeIST(start)} \u2013 ${formatTimeIST(end)}`;
-
 export const nowIST = () => DateTime.now().setZone(IST);
-
 export const todayIST = () => nowIST().toFormat("yyyy-MM-dd");
