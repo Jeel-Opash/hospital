@@ -9,6 +9,6 @@ router.post("/join", authMiddleware, authorizeRole("Patient"), joinWaitlist);
 router.get("/my", authMiddleware, authorizeRole("Patient"), getMyWaitlist);
 router.get("/slot", authMiddleware, authorizeRole("Doctor"), getSlotQueue);
 router.post("/process-next", processNextInQueue);
-router.post("/:waitlistId",authMiddleware,authorizeRole("Patient"),leaveWaitlist,);
+router.delete("/:waitlistId",authMiddleware,authorizeRole("Patient"),leaveWaitlist,);
 
 export default router;

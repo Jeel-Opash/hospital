@@ -61,8 +61,13 @@ const appointmentSchema = new mongoose.Schema(
     doctorNotes: {
       type: String,
       trim: true,
-      maxlength: [200, "Doctor  200 characters"],
+      maxlength: [200, "Doctor notes cannot exceed 200 characters"],
       default: "",
+    },
+    cancellationReason: {
+      type: String,
+      trim: true,
+      default: null,
     },
   },
   {
@@ -109,6 +114,11 @@ appointmentSchema.methods.toLocalTime = function (ianaTimezone = IST) {
     displayEnd: end.toFormat("hh:mm a"),
   };
 };
+
+appointmentSchema.index(
+  { doctorId: 1, slotStartUTC: 1, patientId: 1 },
+  { name: "unique_patient_slot", unique: true, partialFilterExpression: { status: { $in: ["PENDING", "CONFIRMED"] } } },
+);
 
 const appointmentModel = mongoose.model("Appointment", appointmentSchema);
 

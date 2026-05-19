@@ -3,15 +3,13 @@ import { Navigate } from "react-router-dom";
 import Login from "../pages/auth/Login";
 import Register from "../pages/auth/Register";
 import ProtectedRoute from "../components/ProtectRoute";
-
-const Dashboard = ({ title }) => (
-  <main className="grid min-h-screen place-items-center bg-[#eef6f4] px-4">
-    <section className="w-full max-w-xl rounded-3xl bg-white p-8 text-center shadow-2xl shadow-slate-200">
-      <h1 className="text-3xl font-bold text-slate-950">{title}</h1>
-      <p className="mt-3 text-slate-600">You are logged in successfully.</p>
-    </section>
-  </main>
-);
+import PatientDashboard from "../pages/patient/PatientDashboard";
+import PatientAppointments from "../pages/patient/PatientAppointments";
+import PatientWaitlist from "../pages/patient/PatientWaitlist";
+import DoctorDashboard from "../pages/doctor/DoctorDashboard";
+import DoctorAvailability from "../pages/doctor/DoctorAvailability";
+import DoctorBlackouts from "../pages/doctor/DoctorBlackouts";
+import AdminDashboard from "../pages/admin/AdminDashboard";
 
 const AppRoutes = () => {
   return (
@@ -20,23 +18,68 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      <Route path="/patient"
+      <Route
+        path="/patient"
         element={
           <ProtectedRoute role="Patient">
-            <Dashboard title="Patient Dashboard" />
-          </ProtectedRoute>}/>
+            <PatientDashboard />
+          </ProtectedRoute>
+        }
+      />
 
-      <Route path="/doctor"
+      <Route
+        path="/patient/appointments"
+        element={
+          <ProtectedRoute role="Patient">
+            <PatientAppointments />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/patient/waitlist"
+        element={
+          <ProtectedRoute role="Patient">
+            <PatientWaitlist />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/doctor"
         element={
           <ProtectedRoute role="Doctor">
-            <Dashboard title="Doctor Dashboard" />
-          </ProtectedRoute>}/>
+            <DoctorDashboard />
+          </ProtectedRoute>
+        }
+      />
 
-      <Route path="/admin"
+      <Route
+        path="/doctor/availability"
+        element={
+          <ProtectedRoute role="Doctor">
+            <DoctorAvailability />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/doctor/blackouts"
+        element={
+          <ProtectedRoute role="Doctor">
+            <DoctorBlackouts />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin"
         element={
           <ProtectedRoute role="Clinic Admin">
-            <Dashboard title="Clinic Admin Dashboard" />
-          </ProtectedRoute>}/>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 };

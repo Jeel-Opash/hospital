@@ -8,15 +8,14 @@ export const authMiddleware = (req, res, next) => {
   const token = req.cookies?.token || bearerToken;
 
   if (!token) {
-    throw new ApiError(400, "Access denied. No token provided.");
+    return next(new ApiError(401, "Access denied. No token provided."));
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     req.user = decoded;
     next();
-  } catch (error) {
-    throw new ApiError(400, "Invalid Token");
+  } catch {
+    return next(new ApiError(401, "Invalid or expired token."));
   }
 };

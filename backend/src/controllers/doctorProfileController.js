@@ -256,12 +256,5 @@ export const searchDoctor = controller(async (req, res) => {
     }),
   );
 
-  let filteredResults = results;
-  if (date) {
-    filteredResults = results.filter((d) =>
-      d.nextSlots.some((s) => s.date === date),
-    );
-  }
-
-  return ok(filteredResults, "Doctors fetched successfully");
+  return ok(results, "Doctors fetched successfully");
 });
