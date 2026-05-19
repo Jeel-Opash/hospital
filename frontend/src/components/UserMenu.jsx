@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-/* ── Generic UserMenu (Patient / Admin) ── */
 export const UserMenu = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -43,7 +42,6 @@ export const UserMenu = () => {
   );
 };
 
-/* ── Doctor UserMenu — Profile opens a side drawer ── */
 export const DoctorUserMenu = ({ pf, setF, saveProfile, profileMut }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -57,7 +55,6 @@ export const DoctorUserMenu = ({ pf, setF, saveProfile, profileMut }) => {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  // Close drawer on Escape
   useEffect(() => {
     const h = (e) => { if (e.key === "Escape") setDrawer(false); };
     document.addEventListener("keydown", h);
@@ -68,13 +65,11 @@ export const DoctorUserMenu = ({ pf, setF, saveProfile, profileMut }) => {
 
   const handleSave = (e) => {
     saveProfile(e);
-    // Close drawer after successful save (profileMut.onSuccess handles toast)
     if (!profileMut.isPending) setDrawer(false);
   };
 
   return (
     <>
-      {/* ── Trigger ── */}
       <div className="user-menu" ref={ref}>
         <button className="user-menu__trigger" onClick={() => setOpen((o) => !o)}>
           <span className="user-menu__avatar">{initial}</span>
@@ -108,7 +103,6 @@ export const DoctorUserMenu = ({ pf, setF, saveProfile, profileMut }) => {
         )}
       </div>
 
-      {/* ── Profile Drawer ── */}
       {drawer && (
         <div className="drawer-backdrop" onClick={() => setDrawer(false)}>
           <aside className="drawer" onClick={(e) => e.stopPropagation()}>

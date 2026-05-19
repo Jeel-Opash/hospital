@@ -54,7 +54,6 @@ const PatientAppointments = () => {
     <PatientShell title="My Appointments">
       <section className="panel" style={{ gridColumn: "1 / -1" }}>
 
-        {/* ── Tab bar ── */}
         <div className="appt-tabs">
           {[["upcoming", "Upcoming", upcoming.length, ""], ["past", "Past", past.length, " muted-badge"]].map(([key, label, count, cls]) => (
             <button key={key} className={tab === key ? "appt-tab active" : "appt-tab"} onClick={() => setTab(key)}>
@@ -67,7 +66,6 @@ const PatientAppointments = () => {
           </span>
         </div>
 
-        {/* ── Empty / Loading ── */}
         {isLoading && (
           <div className="loading-list" style={{ marginTop: "1rem" }}>
             {[1, 2].map((i) => <div key={i} className="skeleton-card" />)}
@@ -105,7 +103,6 @@ const PatientAppointments = () => {
                 )}
               </div>
 
-              {/* Actions */}
               {tab === "upcoming" ? (
                 <div className="appt-card-actions">
                   <button className="button button-secondary" onClick={() => setDraft(a)}>Reschedule</button>
@@ -123,7 +120,6 @@ const PatientAppointments = () => {
         </div>
       </section>
 
-      {/* ── Reschedule Modal ── */}
       {draft && (
         <div className="modal-backdrop">
           <form className="modal" onSubmit={submitReschedule}>
@@ -140,7 +136,7 @@ const PatientAppointments = () => {
               <input name="slotStart" type="datetime-local" required />
             </label>
             <p className="muted" style={{ margin: 0, fontSize: "0.82rem" }}>
-              ⚠️ The new slot must fit within the doctor's availability window.
+               The new slot must fit within the doctor's availability window.
             </p>
             <div className="actions">
               <button type="button" className="button button-secondary" onClick={() => setDraft(null)}>Cancel</button>

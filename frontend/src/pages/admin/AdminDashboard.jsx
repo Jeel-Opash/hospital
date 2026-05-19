@@ -122,7 +122,6 @@ const AdminDashboard = () => {
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <input type="date" value={aF.from} onChange={(e) => setAF({ ...aF, from:e.target.value, page:1 })} />
-              <input type="date" value={aF.to} onChange={(e) => setAF({ ...aF, to:e.target.value, page:1 })} />
             </div>
             <div className="table-wrap">
               <table>
@@ -155,7 +154,6 @@ const AdminDashboard = () => {
                 {STATUSES.slice(0,4).map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <input type="date" value={pdF.from} onChange={(e) => setPdF({ ...pdF, from:e.target.value })} />
-              <input type="date" value={pdF.to} onChange={(e) => setPdF({ ...pdF, to:e.target.value })} />
             </div>
             {pdQ.data && (
               <div className="metric-row" style={{ marginBottom:"1rem" }}>
