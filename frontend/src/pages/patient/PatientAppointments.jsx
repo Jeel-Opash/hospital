@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import PatientShell from "./PatientShell";
 import { useInvalidatePatientData } from "./patientHooks";
 import { addMinutes, formatSlot, getBrowserTimezone, getId } from "./patientUtils";
+import { TimePicker } from "../doctor/doctorUtils.jsx"
 import { cancelAppointment, getPatientAppointments, rescheduleAppointment } from "../../api/patientApi";
 
 const UPCOMING = ["PENDING", "CONFIRMED"];
@@ -38,15 +39,19 @@ const PatientAppointments = () => {
 
   const rescheduleMut = useMutation({
     mutationFn: ({ id, payload }) => rescheduleAppointment(id, payload),
-    onSuccess: (d) => { toast.success(`Rescheduled — new ID: ${d.bookingId}`); setDraft(null); inv(); },
+    onSuccess: (d) => { toast.success(`Rescheduled — new ID: ${d.bookingId}`); setDraft(null); setReschedDate(""); setReschedTime("09:00"); inv(); },
     onError: (e) => toast.error(e.response?.data?.message || "Reschedule failed"),
   });
+
+  const [reschedDate, setReschedDate] = useState("");
+  const [reschedTime, setReschedTime] = useState("09:00");
 
   const submitReschedule = (e) => {
     e.preventDefault();
     const id = getId(draft);
     if (!id) { toast.error("Select an appointment again."); setDraft(null); return; }
-    const start = new Date(new FormData(e.currentTarget).get("slotStart")).toISOString();
+    if (!reschedDate) { toast.error("Pick a date."); return; }
+    const start = new Date(`${reschedDate}T${reschedTime}`).toISOString();
     rescheduleMut.mutate({ id, payload: { newSlotStartUTC: start, newSlotEndUTC: addMinutes(start, draft.doctor?.slotDurationMin || 30), timezone: tz } });
   };
 
@@ -92,12 +97,10 @@ const PatientAppointments = () => {
               <div className="appt-info">
                 <div className="appt-info-top">
                   <strong>{a.bookingId}</strong>
-                  <span className={statusCls(a.status)}>
-                    {statusIcon(a.status)} {a.status}
-                  </span>
+                  <span className={statusCls(a.status)}>{statusIcon(a.status)} {a.status}</span>
                 </div>
-                
-               
+                <p className="appt-doctor">Dr. {a.doctor?.username || a.doctor?.name || "Doctor"} · {a.doctor?.specialty || ""}</p>
+                {a.reason && <p className="appt-reason">{a.reason}</p>}
                 {tab === "past" && a.status === "CANCELLED" && a.cancellationReason && (
                   <p className="appt-cancel-reason">↳ {a.cancellationReason}</p>
                 )}
@@ -131,15 +134,21 @@ const PatientAppointments = () => {
               <span>📅</span>
               <span>Current: {formatSlot(draft.slot.startUTC, tz)}</span>
             </div>
-            <label>
-              <span>New date &amp; time (your local time)</span>
-              <input name="slotStart" type="datetime-local" required />
-            </label>
+            <div className="form-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+              <label>
+                <span>New date</span>
+                <input type="date" required value={reschedDate} onChange={(e) => setReschedDate(e.target.value)} />
+              </label>
+              <label>
+                <span>New time</span>
+                <TimePicker value={reschedTime} onChange={setReschedTime} />
+              </label>
+            </div>
             <p className="muted" style={{ margin: 0, fontSize: "0.82rem" }}>
                The new slot must fit within the doctor's availability window.
             </p>
             <div className="actions">
-              <button type="button" className="button button-secondary" onClick={() => setDraft(null)}>Cancel</button>
+              <button type="button" className="button button-secondary" onClick={() => { setDraft(null); setReschedDate(""); setReschedTime("09:00"); }}>Cancel</button>
               <button className="button button-primary" disabled={rescheduleMut.isPending} style={{ flex: 1 }}>
                 {rescheduleMut.isPending ? "Rescheduling…" : "Confirm Reschedule"}
               </button>

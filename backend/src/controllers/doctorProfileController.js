@@ -126,8 +126,27 @@ export const updateBlackoutDates = controller(async (req, res) => {
     throw new ApiError(404, "Doctor profile not found");
   }
 
-  const uniqueBlackoutDates = [...new Set(blackoutDates)];
-  doctorProfile.blackoutDates = uniqueBlackoutDates;
+  const valid = blackoutDates.every(
+    (b) =>
+      typeof b === "object" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(b.date) &&
+      (!b.startTime || /^\d{2}:\d{2}$/.test(b.startTime)) &&
+      (!b.endTime || /^\d{2}:\d{2}$/.test(b.endTime)),
+  );
+  if (!valid)
+    throw new ApiError(
+      400,
+      "Each blackout entry must have a date (YYYY-MM-DD) and optional startTime/endTime (HH:MM)",
+    );
+
+  // deduplicate by date+startTime+endTime
+  const seen = new Set();
+  doctorProfile.blackoutDates = blackoutDates.filter((b) => {
+    const key = `${b.date}|${b.startTime ?? ""}|${b.endTime ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 
   const updatedProfile = await doctorProfile.save();
 
@@ -167,7 +186,18 @@ const getNextOpenSlots = async (doctor, startDate, n = 5) => {
     const dateStr = curLocal.toFormat("yyyy-MM-dd");
     const dayName = DAY_MAP[curLocal.weekday - 1];
 
-    if (!doctor.blackoutDates?.includes(dateStr)) {
+    const isBlackedOut = (slotStartLocal, slotEndLocal) =>
+      (doctor.blackoutDates || []).some((b) => {
+        if (b.date !== slotStartLocal.toFormat("yyyy-MM-dd")) return false;
+        if (!b.startTime && !b.endTime) return true; // full-day
+        const bStart = b.startTime ?? "00:00";
+        const bEnd = b.endTime ?? "23:59";
+        const slotS = slotStartLocal.toFormat("HH:mm");
+        const slotE = slotEndLocal.toFormat("HH:mm");
+        return slotS < bEnd && slotE > bStart;
+      });
+
+    if (!(doctor.blackoutDates || []).some((b) => b.date === dateStr && !b.startTime && !b.endTime)) {
       const windows = doctor.weeklyAvailability?.[dayName] || [];
       const sortedWindows = [...windows].sort((a, b) =>
         a.start.localeCompare(b.start),
@@ -195,7 +225,7 @@ const getNextOpenSlots = async (doctor, startDate, n = 5) => {
           const slotStartUTC = slotStartLocal.toUTC();
           const slotEndUTC = slotEndLocal.toUTC();
 
-          if (slotStartUTC > now) {
+          if (slotStartUTC > now && !isBlackedOut(slotStartLocal, slotEndLocal)) {
             const bookedCount = await appointmentModel.countDocuments({
               doctorId: doctor._id,
               status: { $in: ["PENDING", "CONFIRMED"] },

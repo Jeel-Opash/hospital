@@ -44,7 +44,8 @@ const PatientWaitlist = () => {
           <div className="search-empty-state">
             <div className="search-empty-icon">🕐</div>
             <h3>No waitlist entries</h3>
-                      </div>
+            <p>You are not queued for any slots right now.</p>
+          </div>
         )}
 
         <div className="stack">

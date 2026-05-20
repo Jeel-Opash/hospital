@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { updateWeeklyAvailability } from "../../api/doctorApi";
 import DoctorShell from "./DoctorShell";
-import { DAYS, DEF_AVAIL } from "./doctorUtils";
+import { DAYS, DEF_AVAIL, TimePicker } from "./doctorUtils.jsx";
 
 const DoctorAvailability = () => (
   <DoctorShell>

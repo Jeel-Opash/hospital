@@ -449,13 +449,14 @@ th {
 
 .availability-row {
   display: grid;
-  grid-template-columns: 90px 1fr 1fr;
+  grid-template-columns: 100px 1fr 1fr;
   align-items: center;
   gap: 0.8rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--soft);
   padding: 0.85rem;
+  overflow-x: auto;
 }
 
 /* ── Patient appointment tabs ── */

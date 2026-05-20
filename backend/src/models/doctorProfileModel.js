@@ -84,12 +84,29 @@ const doctorProfileSchema = new mongoose.Schema(
       default: () => ({}),
     },
     blackoutDates: {
-      type: [String],
+      type: [
+        new mongoose.Schema(
+          {
+            date: {
+              type: String,
+              required: true,
+              match: [/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"],
+            },
+            startTime: {
+              type: String,
+              default: null,
+              match: [/^\d{2}:\d{2}$/, "startTime must be HH:MM"],
+            },
+            endTime: {
+              type: String,
+              default: null,
+              match: [/^\d{2}:\d{2}$/, "endTime must be HH:MM"],
+            },
+          },
+          { _id: false },
+        ),
+      ],
       default: [],
-      validate: {
-        validator: (arr) => arr.every((d) => /^\d{4}-\d{2}-\d{2}$/.test(d)),
-        message: "Each blackout date must be in YYYY-MM-DD format",
-      },
     },
     maxPatientsPerSlot: {
       type: Number,

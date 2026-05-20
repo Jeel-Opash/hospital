@@ -14,8 +14,7 @@ export const register = controller(async (req, res) => {
     throw new ApiError(409, "User with username or email already exist");
   }
   const user = await userModel.create({
-    username,
-    email,
+    username,email,
     password,
     role,
   });

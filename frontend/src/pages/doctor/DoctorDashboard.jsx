@@ -8,7 +8,7 @@ import {
   updateDoctorNotes,
 } from "../../api/doctorApi";
 import DoctorShell from "./DoctorShell";
-import { fmtDate, fmtTime, todayISO } from "./doctorUtils";
+import { fmtDate, fmtTime, todayISO } from "./doctorUtils.jsx";
 
 const PastCard = ({ appointment, timezone, small }) => (
   <article className="appointment-row past-row">

@@ -7,7 +7,7 @@ import { useAuth } from "../../context/AuthContext";
 import { DoctorUserMenu } from "../../components/UserMenu";
 import { getDoctorProfile, updateDoctorProfile } from "../../api/doctorApi";
 import CreateDoctorProfile from "./CreateDoctorProfile";
-import { parseProfileForm, profileToForm } from "./doctorUtils";
+import { parseProfileForm, profileToForm } from "./doctorUtils.jsx";
 
 const doctorKeys = ["doctor-profile", "doctor-day", "doctor-appointments", "doctor-past", "doctor-cancelled"];
 
